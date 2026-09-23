@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Featured Books about California</title>
+
+  <!-- SheetJS Library for reading Excel files -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root {
+      --primary-color: #005a9c;
+      --card-bg: #ffffff;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      --radius: 12px;
+      --grid-gap: 28px;      /* Increased gap between Hero and Grid */
+      --thumb-gap: 20px;     /* Increased gap between thumbnails */
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f4f6f8;
+      padding: 32px 24px;
+      margin: 0;
+    }
+
+    .bento-wrapper {
+      max-width: 1150px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 32px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .widget-title {
+      font-size: 1.85rem;
+      color: #1a1a1a;
+      margin: 0 0 28px 0;
+      border-left: 5px solid var(--primary-color);
+      padding-left: 16px;
+    }
+
+    /* Bento Grid Layout Structure with increased spacing */
+    .bento-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--grid-gap);
+    }
+
+    @media (min-width: 850px) {
+      .bento-container {
+        grid-template-columns: 380px 1fr; /* Hero Left, Thumbnails Right */
+      }
+    }
+
+    /* Hero Spotlight Card (Main Featured Book) */
+    .bento-hero {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius);
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    .hero-cover-wrapper {
+      width: 100%;
+      max-width: 230px;
+      aspect-ratio: 2/3;
+      overflow: hidden;
+      border-radius: 8px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+      margin-bottom: 20px;
+      background: #e0e0e0;
+    }
+
+    .hero-cover-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.2s ease;
+    }
+
+    .hero-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 10px 0;
+      line-height: 1.3;
+    }
+
+    .hero-author {
+      font-size: 1rem;
+      color: #64748b;
+      margin: 0 0 24px 0;
+    }
+
+    .hero-btn {
+      display: inline-block;
+      background: var(--primary-color);
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: background 0.2s ease;
+    }
+
+    .hero-btn:hover, .hero-btn:focus-visible {
+      background: #003e6b;
+      outline: 2px solid #003e6b;
+    }
+
+    /* Grid of Book Cover Thumbnails with increased spacing */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: var(--thumb-gap);
+      align-content: start;
+    }
+
+    .thumb-card {
+      background: #ffffff;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      padding: 8px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      outline: none;
+    }
+
+    .thumb-card:hover, .thumb-card:focus-visible {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+      border-color: var(--primary-color);
+    }
+
+    .thumb-card.active {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px var(--primary-color);
+      background-color: #f0f7ff;
+    }
+
+    .thumb-cover-wrapper {
+      width: 100%;
+      aspect-ratio: 2/3;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #e2e8f0;
+    }
+
+    .thumb-cover-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .status-msg {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+<div class="bento-wrapper">
+  <h2 class="widget-title">Featured Books about California</h2>
+  
+  <div class="bento-container" id="bentoContainer">
+    <!-- Hero Spotlight Side -->
+    <div class="bento-hero" id="bentoHero">
+      <div class="hero-cover-wrapper">
+        <img class="hero-cover-img" id="heroImg" src="" alt="Featured Book Cover" />
+      </div>
+      <h3 class="hero-title" id="heroTitle">Loading Collection...</h3>
+      <p class="hero-author" id="heroAuthor"></p>
+      <a class="hero-btn" id="heroLink" href="#" target="_blank" rel="noopener noreferrer" style="display: none;">View in Catalog</a>
+    </div>
+
+    <!-- Thumbnail Grid Side -->
+    <div class="bento-grid" id="bentoGrid" role="region" aria-label="California book collection grid">
+      <div class="status-msg" id="statusMsg">Loading books from california-books.xlsx...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const EXCEL_FILE_PATH = 'california-books.xlsx';
+  let booksData = [];
+
+  async function loadCaliforniaBooks() {
+    const grid = document.getElementById('bentoGrid');
+    const statusMsg = document.getElementById('statusMsg');
+
+    try {
+      const response = await fetch(EXCEL_FILE_PATH);
+      if (!response.ok) {
+        throw new Error(`File "${EXCEL_FILE_PATH}" could not be found.`);
+      }
+
+      const dataBuffer = await response.arrayBuffer();
+      const workbook = XLSX.read(dataBuffer, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+      if (!rows.length) {
+        statusMsg.textContent = 'No records found in california-books.xlsx.';
+        return;
+      }
+
+      grid.innerHTML = ''; // Clear status message
+
+      // Process each row in the Excel spreadsheet
+      rows.forEach(row => {
+        // Read cover URL from img_url column (handling casing variations)
+        const coverUrl = row.img_url || row.Img_URL || row.Image_URL || row.image_url || row.cover_url || '';
+        const title = row.Title || row.title || row.TITLE || 'Untitled';
+        const author = row.Author || row.author || row.AUTHOR || '';
+        const catalogLink = row.Link || row.link || row.URL || row.url || '#';
+
+        if (coverUrl) {
+          booksData.push({
+            title: title,
+            author: author,
+            coverUrl: coverUrl,
+            link: catalogLink
+          });
+        }
+      });
+
+      if (booksData.length === 0) {
+        grid.innerHTML = '<div class="status-msg">No valid book covers were found in the img_url column.</div>';
+        return;
+      }
+
+      // Render thumbnail cards
+      booksData.forEach((book, index) => {
+        const card = document.createElement('button');
+        card.className = `thumb-card ${index === 0 ? 'active' : ''}`;
+        card.setAttribute('aria-label', `Select ${book.title}`);
+        card.onclick = () => updateHeroSpotlight(index);
+
+        card.innerHTML = `
+          <div class="thumb-cover-wrapper">
+            <img class="thumb-cover-img" src="${book.coverUrl}" alt="Cover preview for ${book.title}" loading="lazy" />
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+
+      // Initialize Hero Spotlight with the first title
+      updateHeroSpotlight(0);
+
+    } catch (err) {
+      console.error(err);
+      statusMsg.textContent = `Error loading "${EXCEL_FILE_PATH}". Place this HTML file and "california-books.xlsx" in the same directory.`;
+    }
+  }
+
+  // Update Hero Spotlight display when thumbnail is clicked
+  function updateHeroSpotlight(index) {
+    const book = booksData[index];
+    if (!book) return;
+
+    const heroImg = document.getElementById('heroImg');
+    heroImg.style.opacity = '0.3';
+
+    setTimeout(() => {
+      heroImg.src = book.coverUrl;
+      heroImg.alt = `Cover of ${book.title}`;
+      document.getElementById('heroTitle').textContent = book.title;
+      document.getElementById('heroAuthor').textContent = book.author;
+      
+      const heroLink = document.getElementById('heroLink');
+      heroLink.href = book.link;
+      heroLink.style.display = (book.link === '#' || !book.link) ? 'none' : 'inline-block';
+      
+      heroImg.style.opacity = '1';
+    }, 150);
+
+    // Update active highlight state on thumbnails
+    const cards = document.querySelectorAll('.thumb-card');
+    cards.forEach((card, i) => {
+      card.classList.toggle('active', i === index);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', loadCaliforniaBooks);
+</script>
+
+</body>
+</html>
