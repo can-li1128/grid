@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bento Grid Featured Books</title>
+
+  <style>
+    :root {
+      --primary-color: #005a9c;
+      --primary-hover: #003e6b;
+      --card-bg: #ffffff;
+      --border-color: #cbd5e1;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      --radius: 12px;
+      --grid-gap: 24px;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f8fafc;
+      padding: 32px 20px;
+      margin: 0;
+      color: #0f172a;
+    }
+
+    .bento-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 32px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .widget-header {
+      margin-bottom: 24px;
+    }
+
+    .widget-title {
+      font-size: 1.85rem;
+      color: #0f172a;
+      margin: 0;
+      border-left: 5px solid var(--primary-color);
+      padding-left: 16px;
+    }
+
+    /* Main Bento Layout */
+    .bento-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--grid-gap);
+      align-items: start;
+      margin-top: 24px;
+    }
+
+    @media (min-width: 850px) {
+      .bento-container {
+        grid-template-columns: 380px 1fr;
+      }
+    }
+
+    /* Sticky Hero Spotlight Card */
+    .bento-hero {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+
+    .hero-cover-wrapper {
+      width: 100%;
+      max-width: 200px;
+      aspect-ratio: 2/3;
+      overflow: hidden;
+      border-radius: 8px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+      margin-bottom: 20px;
+      background: #e2e8f0;
+      flex-shrink: 0;
+    }
+
+    .hero-cover-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.2s ease;
+    }
+
+    /* Go to Catalog Button (Positioned under cover image) */
+    .hero-btn {
+      display: inline-block;
+      background: var(--primary-color);
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: background 0.2s ease, outline 0.2s ease;
+      margin-bottom: 20px;
+      width: 85%;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    .hero-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .hero-btn:focus-visible {
+      background: var(--primary-hover);
+      outline: 3px solid var(--primary-hover);
+      outline-offset: 2px;
+    }
+
+    /* Title & Call Number (Positioned under catalog button) */
+    .hero-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 6px 0;
+      line-height: 1.35;
+    }
+
+    .hero-call-number {
+      font-size: 0.88rem;
+      color: #64748b;
+      margin: 0 0 16px 0;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    /* Subjects & Description Section (Positioned under title & call number) */
+    .hero-details {
+      width: 100%;
+      text-align: left;
+      border-top: 1px solid var(--border-color);
+      padding-top: 16px;
+      margin-top: 4px;
+    }
+
+    .hero-section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      color: #64748b;
+      margin: 0 0 8px 0;
+    }
+
+    .hero-subjects {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .subject-tag {
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+
+    .hero-description {
+      font-size: 0.85rem;
+      color: #475569;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* Bento Grid Display with Spacing */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 20px;
+      align-content: start;
+    }
+
+    .thumb-card {
+      background: #ffffff;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      padding: 8px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .thumb-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+      border-color: var(--primary-color);
+    }
+
+    .thumb-card:focus-visible {
+      outline: 3px solid var(--primary-color);
+      outline-offset: 2px;
+      border-color: var(--primary-color);
+    }
+
+    .thumb-card.active {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px var(--primary-color);
+      background-color: #f0f7ff;
+    }
+
+    .thumb-cover-wrapper {
+      width: 100%;
+      aspect-ratio: 2/3;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #e2e8f0;
+    }
+
+    .thumb-cover-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .status-msg {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+<main class="bento-wrapper">
+  <header class="widget-header">
+    <h1 class="widget-title">Featured Books Display</h1>
+  </header>
+
+  <div class="bento-container" id="bentoContainer">
+    <!-- Sticky Hero Spotlight Card -->
+    <aside class="bento-hero" id="bentoHero" aria-label="Selected Book Spotlight">
+      <!-- 1. Cover Image -->
+      <div class="hero-cover-wrapper">
+        <img class="hero-cover-img" id="heroImg" src="" alt="" style="display: none;" />
+      </div>
+
+      <!-- 2. "Go to Catalog" Button -->
+      <a class="hero-btn" id="heroLink" href="#" target="_blank" rel="noopener noreferrer" style="display: none;">Go to Catalog</a>
+
+      <!-- 3. Title & Call Number -->
+      <h2 class="hero-title" id="heroTitle">Loading Collection...</h2>
+      <p class="hero-call-number" id="heroCallNumber"></p>
+
+      <!-- 4. Subjects & Description Details -->
+      <div class="hero-details" id="heroDetails" style="display: none;">
+        <div id="subjectsSection" style="display: none;">
+          <h3 class="hero-section-title">Subjects</h3>
+          <div class="hero-subjects" id="heroSubjects"></div>
+        </div>
+
+        <div id="descriptionSection" style="display: none;">
+          <h3 class="hero-section-title">Description</h3>
+          <p class="hero-description" id="heroDescription"></p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Thumbnail Grid -->
+    <section class="bento-grid" id="bentoGrid" aria-label="Book Collection Thumbnails">
+      <div class="status-msg" id="statusMsg">Loading <code>books_enriched.json</code>...</div>
+    </section>
+  </div>
+</main>
+
+<script>
+  let booksData = [];
+
+  // Helper to validate Syndetics image URL presence and skip empty/placeholder entries
+  function isValidImageUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    const cleanUrl = url.trim().toLowerCase();
+    if (cleanUrl === '' || cleanUrl === '#' || cleanUrl === 'null' || cleanUrl === 'undefined') return false;
+    if (cleanUrl.includes('placeholder') || cleanUrl.includes('no_cover') || cleanUrl.includes('nocover')) return false;
+    return true;
+  }
+
+  // Parses subjects into clean tags
+  function parseSubjects(rawSubjects) {
+    if (!rawSubjects) return [];
+    let list = Array.isArray(rawSubjects) ? rawSubjects : [rawSubjects];
+
+    return list
+      .map(s => String(s).split('$$')[0].replace(/--/g, '•').trim())
+      .filter(Boolean)
+      .slice(0, 3);
+  }
+
+  // Fetches books_enriched.json directly from the same directory on load
+  async function loadBooksJson() {
+    const statusMsg = document.getElementById('statusMsg');
+
+    try {
+      const response = await fetch('./books_enriched.json', { cache: 'no-cache' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data = await response.json();
+      if (!Array.isArray(data) || data.length === 0) {
+        statusMsg.textContent = 'No book entries found in books_enriched.json.';
+        return;
+      }
+
+      renderBooksGrid(data);
+
+    } catch (err) {
+      console.error('Failed to load books_enriched.json:', err);
+      statusMsg.innerHTML = 'Unable to load <code>books_enriched.json</code>. Ensure the file is in the same directory as this HTML file.';
+      document.getElementById('heroTitle').textContent = 'Unable to Load Data';
+      document.getElementById('heroCallNumber').textContent = '';
+    }
+  }
+
+  // Render thumbnail grid, skipping entries without valid cover images
+  function renderBooksGrid(data) {
+    const grid = document.getElementById('bentoGrid');
+    grid.innerHTML = '';
+
+    // Map fields from books_enriched.json and filter out missing/broken covers
+    booksData = data
+      .map(item => ({
+        title: item.title || item.Title || 'Untitled',
+        callNumber: item.callNumber || item.call_number || item.CallNumber || '',
+        permalink: item.permalink || item.Permalink || item.link || item.Link || '#',
+        isbn: item.isbn || item.ISBN || '',
+        subjects: parseSubjects(item.subjects || item.subject || item.Subjects),
+        description: String(item.description || item.Description || '').split('$$')[0].trim(),
+        img_url: item.img_url || item.Img_URL || item.image_url || item.cover_url || ''
+      }))
+      .filter(book => isValidImageUrl(book.img_url));
+
+    if (booksData.length === 0) {
+      grid.innerHTML = '<div class="status-msg">No valid book entries with active cover images were found.</div>';
+      return;
+    }
+
+    booksData.forEach((book, index) => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = `thumb-card ${index === 0 ? 'active' : ''}`;
+      card.setAttribute('aria-label', `View details for ${book.title}`);
+      card.setAttribute('aria-pressed', index === 0 ? 'true' : 'false');
+      card.dataset.index = index;
+      card.onclick = () => selectBook(index);
+
+      const coverImg = document.createElement('img');
+      coverImg.className = 'thumb-cover-img';
+      coverImg.src = book.img_url;
+      coverImg.alt = `Cover preview for ${book.title}`;
+      coverImg.loading = 'lazy';
+
+      // Fallback: Remove card if Syndetics image request fails
+      coverImg.onerror = function() {
+        card.remove();
+        if (grid.children.length === 0) {
+          grid.innerHTML = '<div class="status-msg">No valid book covers loaded.</div>';
+        }
+      };
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'thumb-cover-wrapper';
+      wrapper.appendChild(coverImg);
+
+      card.appendChild(wrapper);
+      grid.appendChild(card);
+    });
+
+    // Automatically spotlight the first valid book
+    selectBook(0);
+  }
+
+  // Update sticky hero card when a book thumbnail is clicked
+  function selectBook(index) {
+    const book = booksData[index];
+    if (!book) return;
+
+    // Highlight active thumbnail and set ARIA states
+    const cards = document.querySelectorAll('.thumb-card');
+    cards.forEach((card) => {
+      const isSelected = parseInt(card.dataset.index, 10) === index;
+      card.classList.toggle('active', isSelected);
+      card.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+    });
+
+    const heroImg = document.getElementById('heroImg');
+    const heroLink = document.getElementById('heroLink');
+    const heroTitle = document.getElementById('heroTitle');
+    const heroCallNumber = document.getElementById('heroCallNumber');
+    const heroDetails = document.getElementById('heroDetails');
+    const subjectsSection = document.getElementById('subjectsSection');
+    const subjectsContainer = document.getElementById('heroSubjects');
+    const descriptionSection = document.getElementById('descriptionSection');
+    const descriptionElement = document.getElementById('heroDescription');
+
+    heroImg.style.opacity = '0.3';
+
+    setTimeout(() => {
+      // 1. Cover Image
+      heroImg.src = book.img_url;
+      heroImg.alt = `Cover of ${book.title}`;
+      heroImg.style.display = 'block';
+
+      // 2. Catalog Button (Links directly to live Primo record via permalink)
+      if (book.permalink && book.permalink !== '#') {
+        heroLink.href = book.permalink;
+        heroLink.style.display = 'inline-block';
+      } else {
+        heroLink.style.display = 'none';
+      }
+
+      // 3. Title & Call Number
+      heroTitle.textContent = book.title;
+      heroCallNumber.textContent = book.callNumber ? `Call No: ${book.callNumber}` : '';
+
+      // 4. Subjects
+      if (book.subjects && book.subjects.length > 0) {
+        subjectsSection.style.display = 'block';
+        subjectsContainer.innerHTML = book.subjects
+          .map(subj => `<span class="subject-tag">${subj}</span>`)
+          .join('');
+      } else {
+        subjectsSection.style.display = 'none';
+        subjectsContainer.innerHTML = '';
+      }
+
+      // 5. Description
+      if (book.description) {
+        descriptionSection.style.display = 'block';
+        descriptionElement.textContent = book.description;
+      } else {
+        descriptionSection.style.display = 'none';
+        descriptionElement.textContent = '';
+      }
+
+      heroDetails.style.display = (book.subjects?.length > 0 || book.description) ? 'block' : 'none';
+      heroImg.style.opacity = '1';
+    }, 100);
+  }
+
+  document.addEventListener('DOMContentLoaded', loadBooksJson);
+</script>
+
+</body>
+</html>
