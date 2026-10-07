@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON Book Metadata Enricher (Primo API)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 650px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: #f8f9fa;
+      color: #333;
+    }
+    .card {
+      background: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #0056b3;
+      margin-top: 0;
+    }
+    .upload-box {
+      margin: 20px 0;
+      padding: 25px;
+      border: 2px dashed #0056b3;
+      border-radius: 6px;
+      background: #f1f7ff;
+      text-align: center;
+    }
+    input[type="file"] {
+      margin-bottom: 10px;
+    }
+    button {
+      background: #28a745;
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      display: none;
+      margin: 20px auto 0 auto;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #218838;
+    }
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      text-align: center;
+    }
+    .progress-bar {
+      width: 100%;
+      background-color: #e0e0e0;
+      border-radius: 4px;
+      margin-top: 15px;
+      display: none;
+    }
+    .progress-fill {
+      width: 0%;
+      height: 12px;
+      background-color: #0056b3;
+      border-radius: 4px;
+      transition: width 0.2s;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>JSON Book Metadata Enricher</h2>
+    <p>Upload your JSON file containing book metadata. This tool will extract the record ID from permalinks, query the Primo API for ISBNs, verify cover images on Syndetics, and generate an updated JSON file for download.</p>
+
+    <div class="upload-box">
+      <input type="file" id="jsonFile" accept=".json" />
+    </div>
+
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div id="status"></div>
+    <button id="downloadBtn" onclick="downloadUpdatedJson()">Download Updated JSON</button>
+  </div>
+
+  <script>
+    // ==========================================
+    // CONFIGURATION: Add your Primo API Key here
+    // ==========================================
+    const PRIMO_API_KEY = 'Your_api_key'; 
+
+    const CLIENT_CODE = 'primo';
+    const VID = '01CALS_SFR:01CALS_SFR';
+    const SCOPE = 'MyInstitution';
+
+    let updatedBooksData = [];
+    let outputFilename = 'updated_books.json';
+
+    // Helper: Verify if a Syndetics URL returns an actual cover image (filters out 1x1 blank GIFs)
+    function checkImageExists(url) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          if (img.naturalWidth > 1 && img.naturalHeight > 1) {
+            resolve(true);
+          } else {
+            resolve(false);
+          }
+        };
+        img.onerror = () => resolve(false);
+        img.src = url;
+      });
+    }
+
+    // Helper: Extract ID digits after "alma" from permalink
+    function extractIdFromPermalink(permalink) {
+      if (!permalink) return null;
+      const match = permalink.match(/alma(\d+)/i);
+      return match ? match[1] : null;
+    }
+
+    // Fetch book metadata using Primo Search API endpoint
+    async function fetchPrimoApiRecord(recordId) {
+      if (!PRIMO_API_KEY || PRIMO_API_KEY === 'YOUR_API_KEY_HERE') {
+        throw new Error('API_KEY_MISSING');
+      }
+
+      const apiUrl = `https://api-na.hosted.exlibrisgroup.com/primo/v1/search?vid=${encodeURIComponent(VID)}&scope=${encodeURIComponent(SCOPE)}&q=any,contains,${recordId}&apikey=${encodeURIComponent(PRIMO_API_KEY)}`;
+
+      try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          console.warn(`Primo API query failed with status ${response.status} for ID ${recordId}`);
+          return null;
+        }
+        return await response.json();
+      } catch (err) {
+        console.warn(`Fetch error for Primo API ID ${recordId}:`, err);
+        return null;
+      }
+    }
+
+    // Extract ISBNs from API response (inspects addata.isbn and display.identifier)
+    function parseIsbnsFromPrimoResult(apiData) {
+      const isbnsSet = new Set();
+
+      if (!apiData || !apiData.docs || apiData.docs.length === 0) {
+        return [];
+      }
+
+      const doc = apiData.docs[0]; // Process top matching record
+      const pnx = doc.pnx || doc;  // Handle standard PNX response structure
+
+      // 1. Check addata.isbn array
+      if (pnx.addata && Array.isArray(pnx.addata.isbn)) {
+        pnx.addata.isbn.forEach(item => {
+          const cleaned = String(item).replace(/[^0-9X]/gi, '');
+          if (cleaned.length >= 10) isbnsSet.add(cleaned);
+        });
+      }
+
+      // 2. Check display.identifier string array (e.g., "$$CISBN$$V9780394722900...")
+      if (pnx.display && Array.isArray(pnx.display.identifier)) {
+        pnx.display.identifier.forEach(str => {
+          const matches = str.match(/\$\$CISBN\$\$V([0-9X]+)/gi);
+          if (matches) {
+            matches.forEach(m => {
+              const cleaned = m.replace(/\$\$CISBN\$\$V/i, '').replace(/[^0-9X]/gi, '');
+              if (cleaned.length >= 10) isbnsSet.add(cleaned);
+            });
+          }
+        });
+      }
+
+      return Array.from(isbnsSet);
+    }
+
+    document.getElementById('jsonFile').addEventListener('change', handleFileUpload);
+
+    async function handleFileUpload(event) {
+      const file = event.target.files[0];
+      const status = document.getElementById('status');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const progressBar = document.getElementById('progressBar');
+      const progressFill = document.getElementById('progressFill');
+
+      if (!file) return;
+
+      outputFilename = file.name.replace(/\.[^/.]+$/, "") + "_updated.json";
+      downloadBtn.style.display = 'none';
+      progressBar.style.display = 'block';
+      progressFill.style.width = '0%';
+      status.textContent = 'Reading JSON file...';
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const rawData = JSON.parse(e.target.result);
+          const books = Array.isArray(rawData) ? rawData : [rawData];
+
+          status.textContent = `Processing ${books.length} book records...`;
+          updatedBooksData = [];
+
+          for (let i = 0; i < books.length; i++) {
+            const book = books[i];
+            const updatedBook = { ...book };
+
+            const recordId = extractIdFromPermalink(book.permalink);
+            let isbns = [];
+
+            if (recordId) {
+              status.textContent = `Querying Primo API for Record ID: ${recordId} (${i + 1}/${books.length})...`;
+              
+              try {
+                const apiResult = await fetchPrimoApiRecord(recordId);
+                isbns = parseIsbnsFromPrimoResult(apiResult);
+              } catch (apiErr) {
+                if (apiErr.message === 'API_KEY_MISSING') {
+                  status.textContent = 'Error: Please add your Primo API key to the HTML script.';
+                  progressBar.style.display = 'none';
+                  return;
+                }
+              }
+            }
+
+            // Save extracted ISBNs to JSON record (joined by semicolons)
+            updatedBook.isbn = isbns.join('; ');
+
+            // Verify and assign img_url using valid ISBNs
+            updatedBook.img_url = '';
+            for (const cleanIsbn of isbns) {
+              const testUrl = `https://syndetics.com/index.aspx?isbn=${cleanIsbn}/LC.GIF&client=${CLIENT_CODE}&type=xw12`;
+              const isValid = await checkImageExists(testUrl);
+
+              if (isValid) {
+                updatedBook.img_url = testUrl;
+                break; // Use the first verified cover image
+              }
+            }
+
+            updatedBooksData.push(updatedBook);
+
+            // Update Progress UI
+            const progressPercent = Math.round(((i + 1) / books.length) * 100);
+            progressFill.style.width = `${progressPercent}%`;
+          }
+
+          status.textContent = `Completed processing ${books.length} records!`;
+          downloadBtn.style.display = 'block';
+
+        } catch (err) {
+          console.error(err);
+          status.textContent = 'Error processing file. Please ensure it is a valid JSON file.';
+          progressBar.style.display = 'none';
+        }
+      };
+
+      reader.readAsText(file);
+    }
+
+    function downloadUpdatedJson() {
+      if (!updatedBooksData || updatedBooksData.length === 0) return;
+
+      const jsonString = JSON.stringify(updatedBooksData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = outputFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
+
+</body>
+</html>
