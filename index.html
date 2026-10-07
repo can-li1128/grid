@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Featured Books about California</title>
+  <title>Bento Grid Book Showcase</title>
 
   <style>
     :root {
@@ -40,9 +40,32 @@
     .widget-title {
       font-size: 1.85rem;
       color: #0f172a;
-      margin: 0;
+      margin: 0 0 16px 0;
       border-left: 5px solid var(--primary-color);
       padding-left: 16px;
+    }
+
+    /* File Upload Control Fallback */
+    .upload-bar {
+      background: #f1f5f9;
+      border: 2px dashed #94a3b8;
+      border-radius: 8px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .upload-label {
+      font-weight: 600;
+      color: #334155;
+      font-size: 0.9rem;
+    }
+
+    .file-input {
+      font-size: 0.9rem;
+      color: #475569;
     }
 
     /* Main Bento Layout */
@@ -96,10 +119,10 @@
       height: 100%;
       object-fit: cover;
       display: block;
-      transition: opacity 0.15s ease;
+      transition: opacity 0.2s ease;
     }
 
-    /* "Go to Catalog" Link Button */
+    /* Catalog Button Link */
     .hero-btn {
       display: inline-block;
       background: var(--primary-color);
@@ -122,7 +145,7 @@
 
     .hero-btn:focus-visible {
       background: var(--primary-hover);
-      outline: 3px solid #005a9c;
+      outline: 3px solid var(--primary-hover);
       outline-offset: 2px;
     }
 
@@ -184,11 +207,11 @@
       margin: 0;
     }
 
-    /* Thumbnail Grid Display */
+    /* Responsive Bento Grid Display with Spacing */
     .bento-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 20px;
       align-content: start;
     }
 
@@ -248,11 +271,17 @@
 
 <main class="bento-wrapper">
   <header class="widget-header">
-    <h1 class="widget-title">Featured Books about California</h1>
+    <h1 class="widget-title">Featured Books Display</h1>
+    
+    <!-- Optional File Picker Input (for offline/local usage) -->
+    <div class="upload-bar">
+      <label class="upload-label" for="jsonFileInput">Select JSON File manually (if required):</label>
+      <input type="file" id="jsonFileInput" class="file-input" accept=".json" />
+    </div>
   </header>
 
   <div class="bento-container" id="bentoContainer">
-    <!-- Sticky Hero Spotlight Card -->
+    <!-- Sticky Hero Card Display -->
     <aside class="bento-hero" id="bentoHero" aria-label="Selected Book Spotlight">
       <div class="hero-cover-wrapper">
         <img class="hero-cover-img" id="heroImg" src="" alt="" style="display: none;" />
@@ -265,7 +294,7 @@
       <h2 class="hero-title" id="heroTitle">Loading Collection...</h2>
       <p class="hero-author" id="heroAuthor"></p>
 
-      <!-- 3. Enriched Subjects & Description Details -->
+      <!-- 3. Direct JSON Metadata (Subjects + Description) -->
       <div class="hero-details" id="heroDetails" style="display: none;">
         <div id="subjectsSection" style="display: none;">
           <h3 class="hero-section-title">Subjects</h3>
@@ -280,7 +309,7 @@
     </aside>
 
     <!-- Thumbnail Grid -->
-    <section class="bento-grid" id="bentoGrid" aria-label="Book collection thumbnails">
+    <section class="bento-grid" id="bentoGrid" aria-label="Book Collection Thumbnails">
       <div class="status-msg" id="statusMsg">Loading <code>books_enriched.json</code>...</div>
     </section>
   </div>
@@ -289,11 +318,11 @@
 <script>
   let booksData = [];
 
-  // Formats author name into "First Name Last Name"
+  // 1. Formats raw author string to "First Name Last Name"
   function formatAuthorName(rawAuthor) {
     if (!rawAuthor) return '';
 
-    let clean = rawAuthor.split('$$')[0];
+    let clean = String(rawAuthor).split('$$')[0];
     clean = clean.replace(/,?\s*\b\d{4}(-\d{2,4})?\b\.?/g, '');
     clean = clean.replace(/,?\s*\b(author|editor|illustrator|translator|compiler)\b\.?/gi, '');
     clean = clean.replace(/^[\s,.]+|[\s,.]+$\vert{}\.$/g, '').trim();
@@ -310,7 +339,7 @@
     return clean;
   }
 
-  // Parse up to 3 subjects
+  // 2. Parses up to 3 subjects from JSON data
   function parseSubjects(item) {
     let rawSubjects = item.subjects || item.subject || item.Subjects || item.Subject || 
                       item.pnx?.display?.subject || item.pnx?.addata?.subject || [];
@@ -319,23 +348,18 @@
     if (!Array.isArray(rawSubjects)) return [];
 
     return rawSubjects
-      .map(s => String(s).split('$$')[0].replace(/--/g, '•').trim())       .filter(Boolean)       .slice(0, 3);   }    // Parse description or abstract   function parseDescription(item) {     let desc = item.description \vert{}\vert{} item.Description \vert{}\vert{} item.abstract \vert{}\vert{} item.Abstract \vert{}\vert{}                 item.pnx?.display?.description?.[0] \vert{}\vert{} item.pnx?.addata?.abstract?.[0] \vert{}\vert{} '';      if (Array.isArray(desc)) desc = desc[0] \vert{}\vert{} '';     return String(desc).split('$$')[0].trim();
+      .map(s => String(s).split('$$')[0].replace(/--/g, '•').trim())       .filter(Boolean)       .slice(0, 3);   }    // 3. Parses description or abstract from JSON data   function parseDescription(item) {     let desc = item.description \vert{}\vert{} item.Description \vert{}\vert{} item.abstract \vert{}\vert{} item.Abstract \vert{}\vert{}                 item.pnx?.display?.description?.[0] \vert{}\vert{} item.pnx?.addata?.abstract?.[0] \vert{}\vert{} '';      if (Array.isArray(desc)) desc = desc[0] \vert{}\vert{} '';     return String(desc).split('$$')[0].trim();
   }
 
-  // Fetch JSON relative to the current directory
-  async function loadBooksJson() {
+  // Auto-fetch books_enriched.json on page load
+  async function autoLoadBooks() {
     const statusMsg = document.getElementById('statusMsg');
 
     try {
-      // Use explicit relative path './books_enriched.json' for GitHub Pages compatibility
       const response = await fetch('./books_enriched.json', { cache: 'no-cache' });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const data = await response.json();
-
       if (!Array.isArray(data) || data.length === 0) {
         statusMsg.textContent = 'No book entries found in books_enriched.json.';
         return;
@@ -344,14 +368,32 @@
       renderBooksGrid(data);
 
     } catch (err) {
-      console.error('Error fetching books_enriched.json:', err);
-      statusMsg.innerHTML = `Unable to load <code>books_enriched.json</code>. Please verify that the JSON file is in the same repository folder and published on GitHub Pages.`;
-      document.getElementById('heroTitle').textContent = 'Loading Error';
-      document.getElementById('heroAuthor').textContent = 'File not found or unreachable';
+      console.warn('Auto-fetch not available or failed:', err);
+      statusMsg.innerHTML = 'Select your <code>books_enriched.json</code> file above to load the display.';
+      document.getElementById('heroTitle').textContent = 'Select Collection File';
+      document.getElementById('heroAuthor').textContent = 'Upload JSON file to display books';
     }
   }
 
-  // Render thumbnail cards into grid
+  // Local file input handler
+  document.getElementById('jsonFileInput').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    const statusMsg = document.getElementById('statusMsg');
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        renderBooksGrid(data);
+      } catch (err) {
+        statusMsg.textContent = 'Failed to parse JSON file. Ensure it is valid JSON.';
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  // Render book thumbnail grid
   function renderBooksGrid(data) {
     const grid = document.getElementById('bentoGrid');
     grid.innerHTML = '';
@@ -373,7 +415,7 @@
     }).filter(b => b.coverUrl !== '');
 
     if (booksData.length === 0) {
-      grid.innerHTML = '<div class="status-msg">No book entries with valid cover images were found.</div>';
+      grid.innerHTML = '<div class="status-msg">No book entries with valid cover images found.</div>';
       return;
     }
 
@@ -387,21 +429,23 @@
 
       card.innerHTML = `
         <div class="thumb-cover-wrapper">
-          <img class="thumb-cover-img" src="${book.coverUrl}" alt="Cover preview of ${book.title}" loading="lazy" />
+          <img class="thumb-cover-img" src="${book.coverUrl}" alt="Cover preview for ${book.title}" loading="lazy" />
         </div>
       `;
 
       grid.appendChild(card);
     });
 
+    // Automatically spotlight the first book
     selectBook(0);
   }
 
-  // Update hero display on item selection
+  // Update sticky hero card on item click
   function selectBook(index) {
     const book = booksData[index];
     if (!book) return;
 
+    // Update active class & ARIA states on grid cards
     const cards = document.querySelectorAll('.thumb-card');
     cards.forEach((card, i) => {
       const isSelected = i === index;
@@ -424,9 +468,9 @@
       heroImg.alt = `Cover of ${book.title}`;
       heroImg.style.display = 'block';
 
+      // Live Primo Permalink catalog button link
       if (book.permalink && book.permalink !== '#') {
         heroLink.href = book.permalink;
-        heroLink.textContent = "Go to Catalog";
         heroLink.style.display = 'inline-block';
       } else {
         heroLink.style.display = 'none';
@@ -435,6 +479,7 @@
       document.getElementById('heroTitle').textContent = book.title;
       document.getElementById('heroAuthor').textContent = book.authorFormatted;
 
+      // Display subjects directly from JSON data
       if (book.subjects && book.subjects.length > 0) {
         subjectsSection.style.display = 'block';
         subjectsContainer.innerHTML = book.subjects
@@ -445,6 +490,7 @@
         subjectsContainer.innerHTML = '';
       }
 
+      // Display description directly from JSON data
       if (book.description) {
         descriptionSection.style.display = 'block';
         descriptionElement.textContent = book.description;
@@ -458,7 +504,7 @@
     }, 100);
   }
 
-  document.addEventListener('DOMContentLoaded', loadBooksJson);
+  document.addEventListener('DOMContentLoaded', autoLoadBooks);
 </script>
 
 </body>
