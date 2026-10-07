@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Themed Book Grid</title>
+  <style>
+    /* Global & CSS Variable Setup */
+    :root {
+      --primary-color: #0056b3;
+      --primary-hover: #003d80;
+      --bg-color: #f4f6f8;
+      --card-bg: #ffffff;
+      --text-color: #212529;
+      --muted-text: #6c757d;
+      --border-color: #e9ecef;
+      --focus-ring: #ffbf47;
+      --radius: 12px;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --transition-speed: 0.25s;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      padding: 24px 16px;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 2rem;
+    }
+
+    /* Screen Reader Accessibility */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    #status {
+      text-align: center;
+      font-weight: 600;
+      color: var(--primary-color);
+      margin-bottom: 16px;
+    }
+
+    /* Main Bento Layout */
+    .bento-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (min-width: 860px) {
+      .bento-container {
+        grid-template-columns: 420px 1fr;
+      }
+    }
+
+    @media (min-width: 1100px) {
+      .bento-container {
+        grid-template-columns: 480px 1fr;
+      }
+    }
+
+    /* Main Featured Panel (Sticky Behavior) */
+    .main-featured-panel {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      border: 1px solid var(--border-color);
+      /* Keeps the panel pinned as user scrolls the right grid */
+      position: sticky;
+      top: 24px;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+    }
+
+    .featured-image-wrapper {
+      width: 100%;
+      height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fafafa;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    .featured-image-wrapper img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      transition: transform var(--transition-speed) ease;
+    }
+
+    .featured-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 16px;
+    }
+
+    /* Catalog Action Button */
+    .btn-catalog {
+      display: inline-block;
+      width: 100%;
+      text-align: center;
+      background-color: var(--primary-color);
+      color: #ffffff;
+      padding: 12px 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      transition: background-color var(--transition-speed) ease;
+    }
+
+    .btn-catalog:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-catalog:focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    /* Metadata Sections */
+    .metadata-group {
+      margin-top: 16px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 16px;
+    }
+
+    .metadata-heading {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted-text);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .subjects-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      list-style: none;
+    }
+
+    .subject-tag {
+      background-color: #eef2f7;
+      color: #334155;
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .description-text {
+      font-size: 0.95rem;
+      color: #333;
+      white-space: pre-line;
+    }
+
+    /* Grid of Remaining Books */
+    .books-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 16px;
+    }
+
+    .grid-item {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+      border: 2px solid transparent;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: transform var(--transition-speed) ease, border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+    }
+
+    .grid-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+    }
+
+    .grid-item:focus-visible {
+      outline: 3px solid var(--focus-ring);
+      border-color: var(--primary-color);
+    }
+
+    .grid-item.active {
+      border-color: var(--primary-color);
+      background-color: #f0f7ff;
+    }
+
+    .grid-item img {
+      width: 100%;
+      height: 160px;
+      object-fit: contain;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+    .grid-item-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      line-height: 1.2;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      color: var(--text-color);
+    }
+
+    /* Accessibility Reduced Motion Support */
+    @media (prefers-reduced-motion: reduce) {
+      .grid-item, .btn-catalog, .featured-image-wrapper img {
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Library Catalog & Discoveries</h1>
+
+    <div id="status" role="status">Loading library catalog data...</div>
+    <div id="sr-status" class="sr-only" aria-live="polite"></div>
+
+    <main class="bento-container" id="bentoContainer" style="display: none;">
+      
+      <!-- Sticky Main Featured Display Area -->
+      <section class="main-featured-panel" aria-label="Featured Book Details" id="featuredPanel">
+        <div class="featured-image-wrapper">
+          <img id="mainImg" src="" alt="" />
+        </div>
+        
+        <h2 class="featured-title" id="mainTitle"></h2>
+        
+        <a id="catalogBtn" class="btn-catalog" href="#" target="_blank" rel="noopener noreferrer">
+          Go to Catalog
+        </a>
+
+        <div class="metadata-group">
+          <h3 class="metadata-heading">Subjects</h3>
+          <ul class="subjects-list" id="mainSubjects"></ul>
+        </div>
+
+        <div class="metadata-group">
+          <h3 class="metadata-heading">Description / Abstract</h3>
+          <p class="description-text" id="mainDescription"></p>
+        </div>
+      </section>
+
+      <!-- Grid of Interactive Book Tiles -->
+      <section aria-label="Book Collection Grid">
+        <div class="books-grid" id="booksGrid" role="list"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    const DATA_FILE = 'books_enriched.json';
+    let booksData = [];
+
+    window.addEventListener('DOMContentLoaded', initApp);
+
+    async function initApp() {
+      const statusEl = document.getElementById('status');
+      const srStatusEl = document.getElementById('sr-status');
+      const bentoContainer = document.getElementById('bentoContainer');
+
+      try {
+        const response = await fetch(DATA_FILE);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        booksData = await response.json();
+
+        if (!Array.isArray(booksData) || booksData.length === 0) {
+          statusEl.textContent = 'No book data available.';
+          return;
+        }
+
+        statusEl.style.display = 'none';
+        bentoContainer.style.display = 'grid';
+
+        renderGrid(booksData);
+        
+        // Select the first book by default
+        selectBook(0);
+
+      } catch (error) {
+        console.error('Error fetching or processing JSON:', error);
+        statusEl.textContent = 'Failed to load book data. Please verify books_enriched.json exists.';
+      }
+    }
+
+    function renderGrid(books) {
+      const gridContainer = document.getElementById('booksGrid');
+      gridContainer.innerHTML = '';
+
+      books.forEach((book, index) => {
+        const item = document.createElement('div');
+        item.className = 'grid-item';
+        item.setAttribute('role', 'listitem');
+        item.setAttribute('tabindex', '0');
+        item.setAttribute('aria-label', `Select ${book.title || 'Untitled Book'}`);
+        item.dataset.index = index;
+
+        const imgUrl = book.img_url || '';
+        const title = book.title || 'Untitled';
+
+        item.innerHTML = `
+          <img src="${imgUrl}" alt="${title}" onError="this.style.visibility='hidden';" />
+          <div class="grid-item-title">${title}</div>
+        `;
+
+        // Click interaction
+        item.addEventListener('click', () => selectBook(index));
+
+        // Keyboard interaction (Enter & Spacebar)
+        item.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectBook(index);
+          }
+        });
+
+        gridContainer.appendChild(item);
+      });
+    }
+
+    function selectBook(index) {
+      const book = booksData[index];
+      if (!book) return;
+
+      // Update featured panel main contents
+      const mainImg = document.getElementById('mainImg');
+      const mainTitle = document.getElementById('mainTitle');
+      const catalogBtn = document.getElementById('catalogBtn');
+      const mainSubjects = document.getElementById('mainSubjects');
+      const mainDescription = document.getElementById('mainDescription');
+      const srStatusEl = document.getElementById('sr-status');
+
+      mainImg.src = book.img_url || '';
+      mainImg.alt = book.title ? `Cover image for ${book.title}` : 'Book Cover';
+      mainTitle.textContent = book.title || 'Untitled';
+      
+      catalogBtn.href = book.permalink || '#';
+      if (!book.permalink || book.permalink === '#') {
+        catalogBtn.setAttribute('aria-disabled', 'true');
+      } else {
+        catalogBtn.removeAttribute('aria-disabled');
+      }
+
+      // Render Subjects
+      mainSubjects.innerHTML = '';
+      if (Array.isArray(book.subjects) && book.subjects.length > 0) {
+        book.subjects.forEach(subject => {
+          const li = document.createElement('li');
+          li.className = 'subject-tag';
+          li.textContent = subject;
+          mainSubjects.appendChild(li);
+        });
+      } else {
+        const li = document.createElement('li');
+        li.className = 'subject-tag';
+        li.textContent = 'No subjects listed';
+        mainSubjects.appendChild(li);
+      }
+
+      // Render Description / Abstract
+      mainDescription.textContent = book.description || book.abstract || 'No description available for this title.';
+
+      // Highlight selected tile in grid
+      const gridItems = document.querySelectorAll('.grid-item');
+      gridItems.forEach((item, i) => {
+        if (i === index) {
+          item.classList.add('active');
+          item.setAttribute('aria-selected', 'true');
+        } else {
+          item.classList.remove('active');
+          item.setAttribute('aria-selected', 'false');
+        }
+      });
+
+      // Announce changes to screen readers
+      srStatusEl.textContent = `Selected book: ${book.title || 'Untitled'}`;
+    }
+  </script>
+</body>
+</html>
